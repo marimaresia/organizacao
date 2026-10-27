@@ -55,7 +55,7 @@ summary{cursor:pointer}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
-var SB_URL="https://vkmbbkfknrhmualrqnpg.supabase.co",SB_KEY="sb_publishable_hxXOEN3ctL0qaltOg-yaXg_-kIzF2Sc",SYNC="mf9d6b2ffad88697b6002-organizacao",KEY="org:v1",sb=null,timer=null,S,V="hoje",WS,MS,SD,RM;
+var SB_URL="https://vkmbbkfknrhmualrqnpg.supabase.co",SB_KEY="sb_publishable_hxXOEN3ctL0qaltOg-yaXg_-kIzF2Sc",SYNC="mf9d6b2ffad88697b6002-organizacao",KEY="org:v1",sb=null,timer=null,S,V="hoje",WS,MS,SD,RM,EH=null,DEL=null,HO=false,EB=null,RO=false;
 var DEF=["Família","Relacionamento amoroso","Amizades","Trabalho e carreira","Finanças","Educação e aprendizado","Lazer e hobbies","Espiritualidade e sentido","Cidadania e sociedade","Autocuidado"];
 var CAT={Trabalho:"w",Treino:"g",Pessoal:"p",Estudo:"y"},DN=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],ORD=[1,2,3,4,5,6,0];
 var MN=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -80,6 +80,7 @@ function load(){
     {id:uid(),name:"Skincare · noite",days:ORD,note:"Sabonete facial → Mix 02 olheiras → hidratante"},
     {id:uid(),name:"Tônico ácido salicílico",days:[2,4,6],note:"Depois do sabonete, 2 a 3x por semana no início"},
     {id:uid(),name:"Ácido glicólico (noite)",days:[0],note:"Hidratante antes. Sem tônico nem outro ácido no mesmo dia"})}
+  if(!S.langSeed){S.langSeed=1;[["Listening",1],["Leitura",2],["Fala",3],["Escrita",4],["Fala + jogos",5],["Leitura leve",6],["Revisão geral",0]].forEach(function(x){var wk=x[1]>0&&x[1]<6;S.routine.push({id:uid(),title:"Idiomas · "+x[0],days:[x[1]],start:wk?"20:00":"09:00",end:wk?"20:45":"09:45",cat:"Estudo"})})}
 }
 function sv(){S._u=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push();R()}
 function rt(d){return S.routine.filter(function(b){return b.days.indexOf(dw(d))>-1}).sort(byS)}
@@ -99,7 +100,9 @@ function rHoje(){
   h+='<div class="box y"><b>Foco do mês</b><br>'+(f.length?f.map(esc).join(" · "):'<span class="mute">Defina no Raio-X.</span>')+'</div>';
   h+='<div class="box"><b>Hábitos</b>'+(hs.length?hs.map(function(x){return'<div class="item"><label class="l"><input type="checkbox" data-h="'+x.id+'"'+(done.indexOf(x.id)>-1?" checked":"")+'><span>'+esc(x.name)+(x.note?'<br><span class="mute">'+esc(x.note)+'</span>':'')+'</span></label></div>'}).join(""):'<p class="mute">Nenhum hábito para hoje.</p>')+'</div>';
   h+='<div class="box"><b>Agenda de hoje</b>'+rt(d).map(rtH).join("")+tk(d).map(tkH).join("")+((rt(d).length+tk(d).length)?"":'<p class="mute">Nada marcado.</p>')+'</div>'+taskForm(d);
-  h+='<details class="box"><summary><b>Gerenciar hábitos</b></summary>'+S.habits.map(function(x){return'<div class="item"><span>'+esc(x.name)+' <span class="mute">'+x.days.map(function(n){return DN[n]}).join(" ")+'</span></span><button class="ghost" data-dh="'+x.id+'" aria-label="Remover hábito">×</button></div>'}).join("")+'<form data-f="habit"><input type="text" name="nm" placeholder="Novo hábito" required aria-label="Hábito"><input type="text" name="nt" placeholder="Passos (opcional)" aria-label="Passos"><p>'+wdH()+'</p><button class="btn" type="submit">Adicionar hábito</button></form></details>';
+  h+='<details class="box" id="hd"'+(HO?' open':'')+'><summary><b>Gerenciar hábitos</b></summary>'+S.habits.map(function(x){
+    if(EH===x.id)return'<form data-f="habitedit" data-id="'+x.id+'" class="item" style="display:block"><input type="text" name="nm" value="'+esc(x.name)+'" required aria-label="Nome"><input type="text" name="nt" value="'+esc(x.note||"")+'" placeholder="Passos (opcional)" aria-label="Passos"><p>'+ORD.map(function(d){return'<label class="ck"><input type="checkbox" name="wd" value="'+d+'"'+(x.days.indexOf(d)>-1?" checked":"")+'> '+DN[d]+'</label>'}).join("")+'</p><button class="btn" type="submit">Salvar</button> <button class="ghost" type="button" data-ce="1">Cancelar</button></form>';
+    return'<div class="item"><span>'+esc(x.name)+' <span class="mute">'+x.days.map(function(n){return DN[n]}).join(" ")+'</span></span><span><button class="ghost" data-eh="'+x.id+'">Editar</button> <button class="ghost" data-dh="'+x.id+'">'+(DEL===x.id?'Confirmar':'Excluir')+'</button></span></div>'}).join("")+'<form data-f="habit"><input type="text" name="nm" placeholder="Novo hábito" required aria-label="Hábito"><input type="text" name="nt" placeholder="Passos (opcional)" aria-label="Passos"><p>'+wdH()+'</p><button class="btn" type="submit">Adicionar hábito</button></form></details>';
   $("v-hoje").innerHTML=h;
 }
 function rSem(){
@@ -107,7 +110,9 @@ function rSem(){
   ORD.forEach(function(w,i){var d=add(WS,i);h+='<div class="box"><b>'+DN[w]+' '+d.slice(8)+'</b>'+(d===today()?' <span class="mute">hoje</span>':'')+rt(d).map(rtH).join("")+tk(d).map(tkH).join("")+'</div>'});
   var inb=S.tasks.filter(function(t){return !t.date});
   h+='<div class="box g"><b>Para encaixar</b>'+(inb.length?inb.map(function(t){return'<div class="item"><span>'+esc(t.title)+'</span><span><input type="date" data-fit="'+t.id+'" aria-label="Encaixar em"> <button class="ghost" data-dt="'+t.id+'" aria-label="Remover">×</button></span></div>'}).join(""):'<p class="mute">Nenhuma. Deixe a data em branco ao criar para cair aqui.</p>')+'</div>'+taskForm("");
-  h+='<details class="box"><summary><b>Rotina fixa</b></summary>'+S.routine.map(function(b){return'<div class="item"><span>'+esc(b.title)+' <span class="mute">'+b.days.map(function(n){return DN[n]}).join(" ")+' '+esc(b.start)+'–'+esc(b.end)+'</span></span><button class="ghost" data-dr="'+b.id+'" aria-label="Remover">×</button></div>'}).join("")+'<form data-f="routine"><input type="text" name="tt" placeholder="Bloco fixo (ex.: Trabalho)" required aria-label="Bloco"><div class="row"><input type="time" name="st" required aria-label="Início"><input type="time" name="en" required aria-label="Fim">'+catSel("ct")+'</div><p>'+wdH()+'</p><button class="btn" type="submit">Adicionar à rotina</button></form></details>';
+  h+='<details class="box" id="rdt"'+(RO?' open':'')+'><summary><b>Rotina fixa</b></summary>'+S.routine.map(function(b){
+    if(EB===b.id)return'<form data-f="routedit" data-id="'+b.id+'" class="item" style="display:block"><input type="text" name="tt" value="'+esc(b.title)+'" required aria-label="Bloco"><div class="row"><input type="time" name="st" value="'+esc(b.start)+'" required aria-label="Início"><input type="time" name="en" value="'+esc(b.end)+'" required aria-label="Fim"><select name="ct" aria-label="Categoria">'+Object.keys(CAT).map(function(c){return'<option'+(c===b.cat?' selected':'')+'>'+c+'</option>'}).join("")+'</select></div><p>'+ORD.map(function(d){return'<label class="ck"><input type="checkbox" name="wd" value="'+d+'"'+(b.days.indexOf(d)>-1?" checked":"")+'> '+DN[d]+'</label>'}).join("")+'</p><button class="btn" type="submit">Salvar</button> <button class="ghost" type="button" data-cb="1">Cancelar</button></form>';
+    return'<div class="item"><span>'+esc(b.title)+' <span class="mute">'+b.days.map(function(n){return DN[n]}).join(" ")+' '+esc(b.start)+'–'+esc(b.end)+'</span></span><span><button class="ghost" data-eb="'+b.id+'">Editar</button> <button class="ghost" data-dr="'+b.id+'">'+(DEL===b.id?'Confirmar':'Excluir')+'</button></span></div>'}).join("")+'<form data-f="routine"><input type="text" name="tt" placeholder="Bloco fixo (ex.: Trabalho)" required aria-label="Bloco"><div class="row"><input type="time" name="st" required aria-label="Início"><input type="time" name="en" required aria-label="Fim">'+catSel("ct")+'</div><p>'+wdH()+'</p><button class="btn" type="submit">Adicionar à rotina</button></form></details>';
   $("v-sem").innerHTML=h;
 }
 function rMes(){
@@ -150,8 +155,12 @@ document.addEventListener("click",function(e){
   if(b=t.closest("[data-rm]")){RM=shiftM(RM,+b.dataset.rm);R();return}
   if(b=t.closest("[data-d]")){SD=b.dataset.d;R();return}
   if(b=t.closest("[data-dt]")){S.tasks=S.tasks.filter(function(y){return y.id!==b.dataset.dt});sv();return}
-  if(b=t.closest("[data-dr]")){S.routine=S.routine.filter(function(y){return y.id!==b.dataset.dr});sv();return}
-  if(b=t.closest("[data-dh]")){S.habits=S.habits.filter(function(y){return y.id!==b.dataset.dh});sv();return}
+  if(b=t.closest("[data-dr]")){var rid=b.dataset.dr;if(DEL===rid){S.routine=S.routine.filter(function(y){return y.id!==rid});DEL=null;sv()}else{DEL=rid;R()}return}
+  if(b=t.closest("[data-eb]")){EB=b.dataset.eb;DEL=null;R();return}
+  if(t.closest("[data-cb]")){EB=null;R();return}
+  if(b=t.closest("[data-dh]")){var hid=b.dataset.dh;if(DEL===hid){S.habits=S.habits.filter(function(y){return y.id!==hid});DEL=null;sv()}else{DEL=hid;R()}return}
+  if(b=t.closest("[data-eh]")){EH=b.dataset.eh;DEL=null;R();return}
+  if(t.closest("[data-ce]")){EH=null;R();return}
   if(b=t.closest("[data-drc]")){S.recipes=S.recipes.filter(function(y){return y.id!==b.dataset.drc});sv();return}
   if(t.closest("[data-sc]")){S.shop=S.shop.filter(function(y){return !y.done});sv();return}
   if(b=t.closest("[data-rc]")){
@@ -181,12 +190,15 @@ document.addEventListener("submit",function(e){
   if(k==="task"){var tt=x.tt.value.trim();if(!tt)return;S.tasks.push({id:uid(),title:tt,date:x.dt.value,start:x.st.value,end:x.en.value,cat:x.ct.value,done:false})}
   if(k==="routine"){if(!ds.length||!x.tt.value.trim())return;S.routine.push({id:uid(),title:x.tt.value.trim(),days:ds,start:x.st.value,end:x.en.value,cat:x.ct.value})}
   if(k==="habit"){var n=x.nm.value.trim();if(!n)return;S.habits.push({id:uid(),name:n,days:ds.length?ds:ORD,note:x.nt.value.trim()})}
+  if(k==="habitedit"){var hh=S.habits.find(function(y){return y.id===f.dataset.id});if(hh&&x.nm.value.trim()){hh.name=x.nm.value.trim();hh.note=x.nt.value.trim();hh.days=ds.length?ds:ORD}EH=null}
+  if(k==="routedit"){var rb=S.routine.find(function(y){return y.id===f.dataset.id});if(rb&&ds.length&&x.tt.value.trim()){rb.title=x.tt.value.trim();rb.start=x.st.value;rb.end=x.en.value;rb.cat=x.ct.value;rb.days=ds}EB=null}
   if(k==="area"){var a=x.nm.value.trim();if(!a||S.areas.indexOf(a)>-1)return;S.areas.push(a)}
   if(k==="recipe"){S.recipes.push({id:uid(),name:x.nm.value.trim(),time:x.tm.value.trim(),serv:x.sv.value.trim(),ing:x.ing.value.trim(),steps:x.stp.value.trim(),url:x.ur.value.trim()})}
   if(k==="shop"){var s=x.tx.value.trim();if(!s)return;S.shop.push({id:uid(),text:s,done:false})}
   sv();
 });
 
+document.addEventListener("toggle",function(e){if(e.target.id==="hd")HO=e.target.open;if(e.target.id==="rdt")RO=e.target.open},true);
 function setSync(t){var e=$("sync");if(e)e.textContent=t}
 function push(){
   if(!sb)return;
