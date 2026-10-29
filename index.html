@@ -75,7 +75,7 @@ function load(){
   try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
   if(!S)S={};
   ["routine","tasks","habits","recipes","shop"].forEach(function(k){if(!S[k])S[k]=[]});
-  if(!S.hlog)S.hlog={};if(!S.rx)S.rx={};if(!S.areas)S.areas=DEF.slice();
+  if(!S.hlog)S.hlog={};if(!S.blog)S.blog={};if(!S.rx)S.rx={};if(!S.areas)S.areas=DEF.slice();
   if(!S.skinSeed){S.skinSeed=1;S.habits.push(
     {id:uid(),name:"Skincare · manhã",days:ORD,note:"Sabonete facial → Mix 02 olheiras → hidratante → protetor solar"},
     {id:uid(),name:"Skincare · noite",days:ORD,note:"Sabonete facial → Mix 02 olheiras → hidratante"},
@@ -86,6 +86,9 @@ function load(){
 function sv(){S._u=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}push();R()}
 function rt(d){return S.routine.filter(function(b){return b.days.indexOf(dw(d))>-1}).sort(byS)}
 function tk(d){return S.tasks.filter(function(t){return t.date===d}).sort(byS)}
+function bd(d){return S.blog[d]||[]}
+function bkH(b,d){var o=bd(d).indexOf(b.id)>-1;return tag(b.cat,'<label class="l"><input type="checkbox" data-bk="'+b.id+'" data-bd="'+d+'"'+(o?" checked":"")+'><span'+(o?' style="text-decoration:line-through"':'')+'>'+esc(b.start)+(b.end?"–"+esc(b.end):"")+" · "+esc(b.title)+'</span></label>')}
+function cnt(d){var l=rt(d);return{n:l.filter(function(b){return bd(d).indexOf(b.id)>-1}).length,t:l.length}}
 function tag(c,t){return'<div class="t '+(CAT[c]||"w")+'">'+t+'</div>'}
 function rtH(b){return tag(b.cat,esc(b.start)+(b.end?"–"+esc(b.end):"")+" · "+esc(b.title))}
 function tkH(t){return'<div class="item"><label class="l"><input type="checkbox" data-tk="'+t.id+'"'+(t.done?" checked":"")+'><span'+(t.done?' style="text-decoration:line-through"':'')+'>'+(t.start?esc(t.start)+" · ":"")+esc(t.title)+'</span></label><button class="ghost" data-dt="'+t.id+'" aria-label="Remover tarefa">×</button></div>'}
@@ -106,8 +109,9 @@ function rHoje(){
   var h='<h2>'+DN[w]+', '+dd.getDate()+' de '+MN[dd.getMonth()].toLowerCase()+'</h2>';
   h+='<div class="box y"><b>Foco do mês</b><br>'+(f.length?f.map(esc).join(" · "):'<span class="mute">Defina no Raio-X.</span>')+'</div>';
   h+='<div class="box"><b>Hábitos</b>'+(hs.length?hs.map(function(x){return'<div class="item"><label class="l"><input type="checkbox" data-h="'+x.id+'"'+(done.indexOf(x.id)>-1?" checked":"")+'><span>'+esc(x.name)+(x.note?'<br><span class="mute">'+esc(x.note)+'</span>':'')+'</span></label></div>'}).join(""):'<p class="mute">Nenhum hábito para hoje.</p>')+'</div>';
-  var cu=cur(d),n=rt(d).length+tk(d).length;
-  h+='<div class="box"><div class="row"><b>Agenda de hoje</b>'+(n?'<button class="ghost" data-ax="1" aria-expanded="'+AX+'">'+(AX?"Recolher ▴":"Ver dia ▾")+'</button>':'')+'</div>'+(!n?'<p class="mute">Nada marcado.</p>':AX?rt(d).map(rtH).join("")+tk(d).map(tkH).join(""):(cu.c?'<div class="mute">Agora</div>'+rtH(cu.c):'<div class="mute">Nada em andamento.</div>')+(cu.nx?'<div class="mute">Próximo</div>'+rtH(cu.nx):''))+'</div>'+taskForm(d);
+  var cu=cur(d),tt=tk(d),tm=tt.filter(function(t){return t.start}),un=tt.filter(function(t){return !t.start}),inb=S.tasks.filter(function(t){return !t.date}),n=rt(d).length+tm.length,ct=cnt(d),bk=function(b){return b.days?bkH(b,d):rtH(b)};
+  h+='<div class="box"><div class="row"><b>Agenda de hoje</b><span>'+(ct.t?'<span class="mute">'+ct.n+'/'+ct.t+' blocos</span> ':'')+(n?'<button class="ghost" data-ax="1" aria-expanded="'+AX+'">'+(AX?"Recolher ▴":"Ver dia ▾")+'</button>':'')+'</span></div>'+(!n?'<p class="mute">Nada marcado.</p>':AX?rt(d).map(function(b){return bkH(b,d)}).join("")+tm.map(tkH).join(""):(cu.c?'<div class="mute">Agora</div>'+bk(cu.c):'<div class="mute">Livre agora</div>')+(cu.nx?'<div class="mute">Próximo</div>'+bk(cu.nx):(cu.c?'':'<div class="mute">Sem mais blocos hoje.</div>')))+'</div>';
+  h+='<div class="box g"><b>Sem horário</b>'+(un.length||inb.length?un.map(tkH).join("")+inb.map(function(t){return'<div class="item"><span>'+esc(t.title)+'</span><span><button class="ghost" data-tod="'+t.id+'">Encaixar hoje</button> <button class="ghost" data-dt="'+t.id+'" aria-label="Remover tarefa">×</button></span></div>'}).join(""):'<p class="mute">Nenhuma tarefa sem horário.</p>')+'</div>'+taskForm(d);
   h+='<details class="box" id="hd"'+(HO?' open':'')+'><summary><b>Gerenciar hábitos</b></summary>'+S.habits.map(function(x){
     if(EH===x.id)return'<form data-f="habitedit" data-id="'+x.id+'" class="item" style="display:block"><input type="text" name="nm" value="'+esc(x.name)+'" required aria-label="Nome"><input type="text" name="nt" value="'+esc(x.note||"")+'" placeholder="Passos (opcional)" aria-label="Passos"><p>'+ORD.map(function(d){return'<label class="ck"><input type="checkbox" name="wd" value="'+d+'"'+(x.days.indexOf(d)>-1?" checked":"")+'> '+DN[d]+'</label>'}).join("")+'</p><button class="btn" type="submit">Salvar</button> <button class="ghost" type="button" data-ce="1">Cancelar</button></form>';
     return'<div class="item"><span>'+esc(x.name)+' <span class="mute">'+x.days.map(function(n){return DN[n]}).join(" ")+'</span></span><span><button class="ghost" data-eh="'+x.id+'">Editar</button> <button class="ghost" data-dh="'+x.id+'">'+(DEL===x.id?'Confirmar':'Excluir')+'</button></span></div>'}).join("")+'<form data-f="habit"><input type="text" name="nm" placeholder="Novo hábito" required aria-label="Hábito"><input type="text" name="nt" placeholder="Passos (opcional)" aria-label="Passos"><p>'+wdH()+'</p><button class="btn" type="submit">Adicionar hábito</button></form></details>';
@@ -115,7 +119,9 @@ function rHoje(){
 }
 function rSem(){
   var h='<div class="row"><button class="ghost" data-wk="-1" aria-label="Semana anterior">‹</button><h2>'+WS.slice(8)+'/'+WS.slice(5,7)+' – '+add(WS,6).slice(8)+'/'+add(WS,6).slice(5,7)+'</h2><button class="ghost" data-wk="1" aria-label="Próxima semana">›</button></div>';
-  ORD.forEach(function(w,i){var d=add(WS,i);h+='<div class="box"><b>'+DN[w]+' '+d.slice(8)+'</b>'+(d===today()?' <span class="mute">hoje</span>':'')+rt(d).map(rtH).join("")+tk(d).map(tkH).join("")+'</div>'});
+  var wn=0,wt=0;ORD.forEach(function(w,i){var c=cnt(add(WS,i));if(add(WS,i)<=today()){wn+=c.n;wt+=c.t}});
+  if(wt)h+='<div class="box y"><b>Rotina cumprida: '+Math.round(wn/wt*100)+'%</b> <span class="mute">'+wn+' de '+wt+' blocos até hoje</span><div class="bar"><i style="width:'+Math.round(wn/wt*100)+'%"></i></div></div>';
+  ORD.forEach(function(w,i){var d=add(WS,i),c=cnt(d);h+='<div class="box"><b>'+DN[w]+' '+d.slice(8)+'</b>'+(d===today()?' <span class="mute">hoje</span>':'')+(c.t&&d<=today()?' <span class="mute">'+c.n+'/'+c.t+' blocos</span>':'')+rt(d).map(function(b){return d<=today()?bkH(b,d):rtH(b)}).join("")+tk(d).map(tkH).join("")+'</div>'});
   var inb=S.tasks.filter(function(t){return !t.date});
   h+='<div class="box g"><b>Para encaixar</b>'+(inb.length?inb.map(function(t){return'<div class="item"><span>'+esc(t.title)+'</span><span><input type="date" data-fit="'+t.id+'" aria-label="Encaixar em"> <button class="ghost" data-dt="'+t.id+'" aria-label="Remover">×</button></span></div>'}).join(""):'<p class="mute">Nenhuma. Deixe a data em branco ao criar para cair aqui.</p>')+'</div>'+taskForm("");
   h+='<details class="box" id="rdt"'+(RO?' open':'')+'><summary><b>Rotina fixa</b></summary>'+routH(S.routine)+routForm()+'</details>';
@@ -151,7 +157,7 @@ function rRx(){
 }
 function rRec(){
   var h='<h2>Receitas</h2><input type="text" id="rq" placeholder="Buscar receita" aria-label="Buscar receita">';
-  h+=S.recipes.map(function(c){if(ER===c.id)return recForm(c);return'<details class="box" data-rn="'+esc(c.name.toLowerCase())+'"><summary><b>'+esc(c.name)+'</b> <span class="mute">'+esc(c.time)+(c.serv?' · '+esc(c.serv)+' porções':'')+'</span></summary>'+(c.ing?'<p><b>Ingredientes</b><br>'+esc(c.ing).replace(/\n/g,"<br>")+'</p>':'')+(c.steps?'<p><b>Preparo</b><br>'+esc(c.steps).replace(/\n/g,"<br>")+'</p>':'')+(c.url?'<p><a href="'+esc(c.url)+'" target="_blank" rel="noopener">Abrir link</a></p>':'')+'<div class="row"><input type="date" id="rd-'+c.id+'" aria-label="Dia"><button class="btn" data-rc="'+c.id+'">Adicionar ao dia</button><button class="ghost" data-er="'+c.id+'">Editar</button><button class="ghost" data-drc="'+c.id+'">Remover</button></div></details>'}).join("")||'<p class="mute">Nenhuma receita ainda.</p>';
+  h+=S.recipes.map(function(c){if(ER===c.id)return recForm(c);return'<details class="box" data-rn="'+esc(c.name.toLowerCase())+'"><summary><b>'+esc(c.name)+'</b> <span class="mute">'+esc(c.time)+(c.serv?' · '+esc(c.serv)+' porções':'')+'</span></summary>'+(c.ing?'<p><b>Ingredientes</b><br>'+esc(c.ing).replace(/\n/g,"<br>")+'</p>':'')+(c.steps?'<p><b>Preparo</b><br>'+esc(c.steps).replace(/\n/g,"<br>")+'</p>':'')+(c.url?'<p><a href="'+esc(c.url)+'" target="_blank" rel="noopener">Abrir link</a></p>':'')+'<div class="row"><input type="date" id="rd-'+c.id+'" aria-label="Dia"><button class="btn" data-rc="'+c.id+'">Adicionar ao dia</button><button class="ghost" data-er="'+c.id+'">Editar</button><button class="ghost" data-drc="'+c.id+'">'+(DEL===c.id?'Confirmar':'Remover')+'</button></div></details>'}).join("")||'<p class="mute">Nenhuma receita ainda.</p>';
   h+=recForm();
   h+='<div class="box g"><b>Lista de mercado</b>'+S.shop.map(function(s){return'<div class="item"><label class="l"><input type="checkbox" data-sh="'+s.id+'"'+(s.done?" checked":"")+'><span'+(s.done?' style="text-decoration:line-through"':'')+'>'+esc(s.text)+'</span></label></div>'}).join("")+'<form data-f="shop" class="row" style="flex-wrap:nowrap"><input type="text" name="tx" placeholder="Item" aria-label="Item"><button class="btn" type="submit">+</button></form><button class="ghost" data-sc="1">Limpar marcados</button></div>';
   $("v-rec").innerHTML=h;
@@ -180,7 +186,8 @@ document.addEventListener("click",function(e){
   if(t.closest("[data-ce]")){EH=null;R();return}
   if(b=t.closest("[data-er]")){ER=b.dataset.er;R();return}
   if(t.closest("[data-cr]")){ER=null;R();return}
-  if(b=t.closest("[data-drc]")){S.recipes=S.recipes.filter(function(y){return y.id!==b.dataset.drc});sv();return}
+  if(b=t.closest("[data-drc]")){var rcid=b.dataset.drc;if(DEL===rcid){S.recipes=S.recipes.filter(function(y){return y.id!==rcid});DEL=null;sv()}else{DEL=rcid;R()}return}
+  if(b=t.closest("[data-tod]")){S.tasks.find(function(y){return y.id===b.dataset.tod}).date=today();sv();return}
   if(t.closest("[data-sc]")){S.shop=S.shop.filter(function(y){return !y.done});sv();return}
   if(b=t.closest("[data-rc]")){
     var c=S.recipes.find(function(y){return y.id===b.dataset.rc}),dv=$("rd-"+c.id).value;
@@ -194,6 +201,7 @@ document.addEventListener("change",function(e){
   var el=e.target,d=el.dataset||{},x;
   if(d.tk){x=S.tasks.find(function(y){return y.id===d.tk});x.done=el.checked;sv()}
   else if(d.h){var dn=today(),l=S.hlog[dn]||(S.hlog[dn]=[]),i=l.indexOf(d.h);if(el.checked&&i<0)l.push(d.h);if(!el.checked&&i>-1)l.splice(i,1);sv()}
+  else if(d.bk){var dn3=d.bd||today(),l3=S.blog[dn3]||(S.blog[dn3]=[]),i4=l3.indexOf(d.bk);if(el.checked&&i4<0)l3.push(d.bk);if(!el.checked&&i4>-1)l3.splice(i4,1);sv()}
   else if(d.fit){if(el.value){S.tasks.find(function(y){return y.id===d.fit}).date=el.value;sv()}}
   else if(d.sh){S.shop.find(function(y){return y.id===d.sh}).done=el.checked;sv()}
   else if(d.fo){var r=rxs(),i2=r.focus.indexOf(d.fo);if(el.checked){if(r.focus.length>=3){el.checked=false;return}r.focus.push(d.fo)}else if(i2>-1)r.focus.splice(i2,1);sv()}
